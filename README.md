@@ -1,4 +1,4 @@
-# UM-Hackathon-2026---Intelligent-Supply-Chain-Agent
+# UM-Hackathon-2026---Intelligent-Supply-Chain-Agent (Team Bug Hunters)
 
 Pitch video: 
 
