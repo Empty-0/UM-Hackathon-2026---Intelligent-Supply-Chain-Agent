@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Procurement Agent System</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  h1 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; color: #38bdf8; }
+  .subtitle { text-align: center; color: #94a3b8; margin-bottom: 24px; font-size: 0.95rem; }
+  .card { background: #1e293b; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #334155; }
+  .card h2 { font-size: 1.1rem; margin-bottom: 12px; color: #38bdf8; }
+  textarea { width: 100%; background: #0f172a; border: 1px solid #475569; border-radius: 8px; color: #e2e8f0; padding: 12px; font-size: 0.95rem; resize: vertical; min-height: 80px; }
+  textarea:focus { outline: none; border-color: #38bdf8; }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  button { padding: 10px 24px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .btn-primary { background: #38bdf8; color: #0f172a; }
+  .btn-primary:hover { background: #7dd3fc; }
+  .btn-primary:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+  .btn-secondary { background: #334155; color: #e2e8f0; }
+  .btn-secondary:hover { background: #475569; }
+  .status-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .status-dot.success { background: #4ade80; }
+  .status-dot.error { background: #f87171; }
+  .status-dot.running { background: #fbbf24; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .agent-section { margin-top: 12px; }
+  .agent-label { font-weight: 700; font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  pre { background: #0f172a; border-radius: 8px; padding: 12px; overflow-x: auto; font-size: 0.82rem; line-height: 1.5; max-height: 400px; overflow-y: auto; border: 1px solid #1e293b; }
+  .winner-card { background: #064e3b; border: 1px solid #10b981; border-radius: 10px; padding: 16px; margin-top: 8px; }
+  .winner-card .name { font-size: 1.1rem; font-weight: 700; color: #6ee7b7; }
+  .winner-card .detail { color: #a7f3d0; font-size: 0.9rem; margin-top: 4px; }
+  .risk-alert { background: #7f1d1d; border: 1px solid #f87171; border-radius: 8px; padding: 10px 14px; margin-top: 8px; font-size: 0.88rem; }
+  .email-draft { background: #1a1a2e; border: 1px solid #475569; border-radius: 8px; padding: 14px; margin-top: 10px; }
+  .email-draft .to { color: #fbbf24; font-weight: 600; }
+  .email-draft .subject { color: #38bdf8; margin-top: 4px; }
+  .email-draft pre { margin-top: 8px; white-space: pre-wrap; }
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .example-btn { background: #1e293b; border: 1px solid #475569; color: #94a3b8; padding: 6px 14px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; }
+  .example-btn:hover { background: #334155; color: #e2e8f0; }
+  .upload-row { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .upload-row input[type="file"] { color: #94a3b8; font-size: 0.85rem; background: #0f172a; border: 1px solid #475569; border-radius: 6px; padding: 6px; }
+  .divider { border: none; border-top: 1px solid #334155; margin: 16px 0; }
+  .loading { text-align: center; padding: 40px; color: #94a3b8; }
+  .file-info { font-size: 0.8rem; color: #6ee7b7; margin-left: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Procurement Agent System</h1>
+  <p class="subtitle">AI-powered sourcing, compliance & email automation</p>
+
+  <div class="card">
+    <h2>Submit Request</h2>
+    <textarea id="userInput" placeholder="e.g. I need 50 units of Silk Hijab under RM200 with delivery within 14 days"></textarea>
+    
+    <!-- Document upload for procurement request (txt, docx, pdf, image) -->
+    <div class="upload-row" style="margin-top: 12px;">
+      <input type="file" id="requestDoc" accept=".txt,.docx,.pdf,.png,.jpg,.jpeg,.gif,.bmp,.tiff">
+      <span class="file-info" id="requestDocInfo">📄 No document selected</span>
+    </div>
+    
+    <div class="examples">
+      <button class="example-btn" onclick="setExample('I need 50 units of Silk Hijab under RM200')">Silk Hijab (50 units)</button>
+      <button class="example-btn" onclick="setExample('Beli 100 unit santan halal')">Santan (Malay)</button>
+      <button class="example-btn" onclick="setExample('10 units Formal Blazer and 20 units Strawberry Jam Premium')">Multi-item</button>
+      <button class="example-btn" onclick="setExample('200 units Pharmaniaga medicine within 7 days')">Pharmaniaga</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary" id="runBtn" onclick="runPipeline()">Run Pipeline</button>
+    </div>
+    <div class="upload-row">
+      <input type="file" id="csvUpload" accept=".csv">
+      <button class="btn-secondary" onclick="uploadCSV()">Upload CSV</button>
+    </div>
+  </div>
+
+  <div id="results" style="display:none">
+    <div class="card" id="statusCard">
+      <h2>Pipeline Status</h2>
+      <div id="statusContent"></div>
+    </div>
+    <div class="card" id="agent1Card">
+      <h2>Agent 1: Requirement Extraction</h2>
+      <pre id="agent1Output"></pre>
+    </div>
+    <div class="card" id="agent2Card">
+      <h2>Agent 2: Strategic Sourcing</h2>
+      <div id="agent2Content"></div>
+    </div>
+    <div class="card" id="agent3Card">
+      <h2>Agent 3: Email Drafts</h2>
+      <div id="agent3Content"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Show selected file name
+document.getElementById('requestDoc').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  const infoSpan = document.getElementById('requestDocInfo');
+  if (file) {
+    infoSpan.innerHTML = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+  } else {
+    infoSpan.innerHTML = `📄 No document selected`;
+  }
+});
+
+function setExample(text) {
+  document.getElementById('userInput').value = text;
+}
+
+async function runPipeline() {
+  const textInput = document.getElementById('userInput').value.trim();
+  const docFile = document.getElementById('requestDoc').files[0];
+  
+  // Must have either text input or uploaded document
+  if (!textInput && !docFile) {
+    alert('Please enter a request or upload a document (.txt, .docx, .pdf, image)');
+    return;
+  }
+  
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  const results = document.getElementById('results');
+  results.style.display = 'block';
+  document.getElementById('statusContent').innerHTML = '<div class="loading"><div class="status-dot running"></div> Processing through 3-agent pipeline...</div>';
+  document.getElementById('agent1Output').textContent = '';
+  document.getElementById('agent2Content').innerHTML = '';
+  document.getElementById('agent3Content').innerHTML = '';
+
+  try {
+    let response;
+    // If document is provided, use /extract endpoint
+    if (docFile) {
+      const formData = new FormData();
+      formData.append('file', docFile);
+      response = await fetch('/extract', {
+        method: 'POST',
+        body: formData
+      });
+    } else {
+      // Use text input only
+      response = await fetch('/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request: textInput })
+      });
+    }
+    const data = await response.json();
+    renderResults(data);
+  } catch (e) {
+    document.getElementById('statusContent').innerHTML = '<div class="status-dot error"></div> Error: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Run Pipeline';
+  }
+}
+
+function renderResults(data) {
+  const status = data.status;
+  const dot = status === 'success' ? 'success' : 'error';
+  const intent = data.intent_type || 'NEW_ORDER';
+  document.getElementById('statusContent').innerHTML = `<div class="status-dot ${dot}"></div> ${status.toUpperCase()} — Intent: ${intent}`;
+
+  // Agent 1
+  if (data.agent1) {
+    document.getElementById('agent1Output').textContent = JSON.stringify(data.agent1.output, null, 2);
+  }
+
+  // Agent 2
+  if (data.agent2 && data.agent2.output) {
+    const out = data.agent2.output;
+    let html = '<pre>' + JSON.stringify(out, null, 2) + '</pre>';
+    if (out.results) {
+      out.results.forEach(r => {
+        if (r.winner) {
+          html += `<div class="winner-card">
+            <div class="name">${escapeHtml(r.winner.name)}</div>
+            <div class="detail">Product: ${escapeHtml(r.winner.product_name)} | Price: RM${r.winner.price_rm.toFixed(2)} | Qty: ${r.winner.quantity} | Total: RM${r.winner.total_price.toFixed(2)}</div>
+            <div class="detail">Lead: ${r.winner.lead_time_days} days | MOQ: ${r.winner.moq} | Country: ${escapeHtml(r.winner.origin_country)}</div>
+            ${r.winner.warning ? '<div class="risk-alert">' + escapeHtml(r.winner.warning) + '</div>' : ''}
+          </div>`;
+        } else {
+          html += `<div class="risk-alert">No match found for: ${escapeHtml(r.product_name)}</div>`;
+        }
+        if (r.risk_alerts) {
+          r.risk_alerts.forEach(a => {
+            html += `<div class="risk-alert">GEO RISK [${a.risk_level}]: ${escapeHtml(a.supplier)} — ${escapeHtml(a.risk_reason)}</div>`;
+          });
+        }
+      });
+    }
+    document.getElementById('agent2Content').innerHTML = html;
+  }
+
+  // Agent 3
+  if (data.agent3 && data.agent3.output && data.agent3.output.emails) {
+    let html = '';
+    data.agent3.output.emails.forEach(e => {
+      html += `<div class="email-draft">
+        <div class="to">To: ${escapeHtml(e.to)}</div>
+        <div class="subject">Subject: ${escapeHtml(e.subject)}</div>
+        <pre>${escapeHtml(e.body)}</pre>
+      </div>`;
+    });
+    document.getElementById('agent3Content').innerHTML = html || '<pre>' + JSON.stringify(data.agent3.output, null, 2) + '</pre>';
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+    return c;
+  });
+}
+
+async function uploadCSV() {
+  const file = document.getElementById('csvUpload').files[0];
+  if (!file) return alert('Select a CSV file first');
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch('/upload-csv', { method: 'POST', body: fd });
+  const data = await res.json();
+  alert(data.error || 'CSV uploaded successfully — ' + (data.rows ? data.rows.length : 0) + ' rows');
+}
+</script>
+</body>
+</html>

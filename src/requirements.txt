@@ -1,0 +1,7 @@
+flask
+zhipuai
+python-docx
+pytesseract
+Pillow
+pdfminer.six
+PyMuPDF           
