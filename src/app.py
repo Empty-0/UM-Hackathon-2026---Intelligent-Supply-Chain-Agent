@@ -32,17 +32,22 @@ app = Flask(__name__)
 CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "suppliers.csv")
 
 # ---------- 视觉模型分析函数 ----------
-def analyze_image_with_glmv(file_path, api_key):
+def analyze_image_with_glmv(file_path):
     """
     使用智谱 GLM-4V 模型分析图片内容，返回结构化 JSON。
     """
     try:
-        client = ZhipuAI(api_key="a82eff1d7e5e04d8182563072a428d063.E4T49tzSmw5ezjii")
+        # 仅从环境变量读取，无默认值
+        API_KEY = os.environ.get("ZHIPU_API_KEY")
+        if not API_KEY:
+            raise ValueError("ZHIPU_API_KEY environment variable not set")
+        client = ZhipuAI(api_key=API_KEY)
+        
         with open(file_path, "rb") as image_file:
             image_base64 = base64.b64encode(image_file.read()).decode('utf-8')
         
         response = client.chat.completions.create(
-            model="glm-4v-plus",  # 可用 glm-4v-plus 或 glm-4v
+            model="glm-4v-plus",
             messages=[{
                 "role": "user",
                 "content": [
@@ -68,7 +73,6 @@ def analyze_image_with_glmv(file_path, api_key):
             temperature=0.3
         )
         result_text = response.choices[0].message.content
-        # 清理可能的 markdown 标记
         result_text = result_text.strip().strip('```json').strip('```').strip()
         result_json = json.loads(result_text)
         return result_json
@@ -80,7 +84,6 @@ def analyze_image_with_glmv(file_path, api_key):
             "extracted_text": "",
             "potential_requirement": ""
         }
-
 
 # ── Document Extraction Helpers ────────────────────────────────────────
 
@@ -115,12 +118,8 @@ def _extract_image(file_storage) -> str:
         file_storage.save(tmp.name)
         tmp_path = tmp.name
     try:
-        # 获取 API Key（建议从环境变量读取，此处直接使用与 agents 相同的 key）
-        # 注意：请将下面的字符串替换为你的实际 API Key
-        API_KEY = "你的智谱API Key"   # <--- 替换为真实 Key
-        
         # 1. 视觉模型分析
-        vision_analysis = analyze_image_with_glmv(tmp_path, API_KEY)
+        vision_analysis = analyze_image_with_glmv(tmp_path)
         print(f"视觉模型分析结果：{vision_analysis}")
         
         # 2. 如果视觉模型提取到了文字，优先使用
@@ -221,7 +220,6 @@ def _extract_text_from_upload(file_storage) -> tuple[str, str]:
         return text, "docx"
 
     if filename.endswith(".doc"):
-        # .doc is old binary format — try python-docx (may fail)
         text = _extract_docx(file_storage)
         if not text:
             return "", "doc_unsupported"
@@ -277,7 +275,6 @@ def _run_pipeline_from_text(user_input: str, source: str = "text"):
             "source": source,
         })
 
-    # Pass intent_type through to Agent 3 for correction workflow
     intent_type = req_parsed.get("intent_type", "NEW_ORDER")
 
     # Agent 3: Email Drafts

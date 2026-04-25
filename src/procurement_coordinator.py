@@ -3,8 +3,11 @@ import os
 from collections import defaultdict
 from zhipuai import ZhipuAI
 
-# 配置你的 API KEY
-API_KEY = "82eff1d7e5e04d8182563072a428d063.E4T49tzSmw5ezjii"
+# 仅从环境变量读取，不做默认值
+API_KEY = os.environ.get("ZHIPU_API_KEY")
+if not API_KEY:
+    raise ValueError("ZHIPU_API_KEY environment variable not set")
+
 client = ZhipuAI(api_key=API_KEY)
 
 def generate_all_drafts(sourcing_json: str, original_request: str, intent_type: str = "NEW_ORDER") -> str:
@@ -16,13 +19,11 @@ def generate_all_drafts(sourcing_json: str, original_request: str, intent_type: 
     except Exception as e:
         return json.dumps({"error": f"Invalid JSON: {e}", "emails": []})
 
-    # 调试：在控制台打印 Agent 2 传过来的内容，方便你查错
     print(f"DEBUG: Agent 3 received results -> {data.get('results')}")
 
     results = data.get("results", [])
     drafts = []
 
-    # --- 逻辑 A: 如果有匹配结果，按供应商分组生成 ---
     if results and any(res.get("winner") for res in results):
         vendor_groups = defaultdict(list)
         risk_alerts = data.get("risk_alerts", [])
@@ -42,12 +43,11 @@ def generate_all_drafts(sourcing_json: str, original_request: str, intent_type: 
             subject, body = _call_glm_to_compose_email(vendor_name, items, original_request, intent_type, [])
             drafts.append({"to": email_addr, "subject": subject, "body": body, "vendor": vendor_name})
 
-    # --- 逻辑 B: 如果没有匹配结果 (兜底方案)，直接让 GLM 写一封通用询价信 ---
     if not drafts:
         print("DEBUG: No vendors found. Triggering GLM-4 Fallback drafting...")
         subject, body = _call_glm_to_compose_email("Potential Supplier", [], original_request, intent_type, [])
         drafts.append({
-            "to": "procurement@company.com", # 占位符
+            "to": "procurement@company.com",
             "subject": subject,
             "body": body,
             "vendor": "System Identified Potential Supplier"
@@ -87,5 +87,4 @@ def _call_glm_to_compose_email(vendor_name, items, original_request, intent_type
         return "Purchase Inquiry", "Please contact us regarding our procurement needs."
 
 def send_all_emails(drafts_json: str) -> str:
-    # 保持原有逻辑
     return json.dumps({"status": "success", "message": "Task processed."})

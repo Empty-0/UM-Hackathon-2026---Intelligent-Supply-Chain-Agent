@@ -2,9 +2,11 @@ import json
 import os
 from zhipuai import ZhipuAI
 
-# 配置你的 API Key
-# 建议：如果是演示现场，直接写死在这里；如果想更专业，可以用 os.environ.get("ZHIPU_API_KEY")
-API_KEY = "82eff1d7e5e04d8182563072a428d063.E4T49tzSmw5ezjii"
+# 仅从环境变量读取，不做默认值
+API_KEY = os.environ.get("ZHIPU_API_KEY")
+if not API_KEY:
+    raise ValueError("ZHIPU_API_KEY environment variable not set")
+
 client = ZhipuAI(api_key=API_KEY)
 
 def extract_requirements(user_input: str) -> str:
@@ -14,7 +16,6 @@ def extract_requirements(user_input: str) -> str:
     """
     print(f"--- GLM-4 Parsing Input: {user_input} ---")
     
-    # 构建 Prompt，强制要求返回符合你系统格式的 JSON
     prompt = f"""
     You are a Procurement Specialist AI. 
     Analyze the user's procurement request and extract structured details.
@@ -47,9 +48,9 @@ def extract_requirements(user_input: str) -> str:
 
     try:
         response = client.chat.completions.create(
-            model="glm-4", # 明确使用 GLM-4
+            model="glm-4",
             messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"} # 确保返回的是 JSON
+            response_format={"type": "json_object"}
         )
         
         result_json = response.choices[0].message.content
@@ -58,7 +59,6 @@ def extract_requirements(user_input: str) -> str:
 
     except Exception as e:
         print(f"Error calling GLM-4: {e}")
-        # 兜底逻辑：如果 API 失败，返回一个最简单的格式，防止整个 pipeline 崩溃
         return json.dumps({
             "intent_type": "NEW_ORDER",
             "original_language": "en",
