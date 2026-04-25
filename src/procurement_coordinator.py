@@ -1,5 +1,7 @@
 import json
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from collections import defaultdict
 from zhipuai import ZhipuAI
 

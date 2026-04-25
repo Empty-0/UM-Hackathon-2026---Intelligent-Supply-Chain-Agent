@@ -1,5 +1,7 @@
 import json
 import os
+from dotenv import load_dotenv
+load_dotenv()
 from zhipuai import ZhipuAI
 
 # 仅从环境变量读取，不做默认值
